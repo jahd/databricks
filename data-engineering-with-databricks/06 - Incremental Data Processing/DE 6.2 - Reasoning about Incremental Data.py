@@ -50,6 +50,11 @@
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC select * from bronze
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC 
 # MAGIC 
@@ -216,10 +221,9 @@ for s in spark.streams.active:
 
 # COMMAND ----------
 
-# %sql
-# SELECT * 
-# FROM streaming_tmp_vw
-# ORDER BY time
+# MAGIC %sql
+# MAGIC SELECT * 
+# MAGIC FROM streaming_tmp_vw
 
 # COMMAND ----------
 

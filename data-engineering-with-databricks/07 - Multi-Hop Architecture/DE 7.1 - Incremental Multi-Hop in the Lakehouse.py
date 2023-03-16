@@ -123,6 +123,16 @@ DA.data_factory.load()
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC select * from recordings_raw_temp
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC describe recordings_raw_temp
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC 
 # MAGIC 
@@ -135,6 +145,11 @@ DA.data_factory.load()
 # MAGIC   SELECT *, current_timestamp() receipt_time, input_file_name() source_file
 # MAGIC   FROM recordings_raw_temp
 # MAGIC )
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from recordings_bronze_temp
 
 # COMMAND ----------
 

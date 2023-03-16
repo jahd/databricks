@@ -44,14 +44,20 @@
 
 # COMMAND ----------
 
-# TODO
 customers_checkpoint_path = f"{DA.paths.checkpoints}/customers"
 
 (spark
-  .readStream
-  <FILL-IN>
-  .load("/databricks-datasets/retail-org/customers/")
-  .createOrReplaceTempView("customers_raw_temp"))
+ .readStream
+ .format("cloudFiles")
+ .option("cloudFiles.format", "csv")
+ .option("cloudFiles.schemaLocation", customers_checkpoint_path)
+ .load("/databricks-datasets/retail-org/customers/")
+ .createOrReplaceTempView("customers_raw_temp"))
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from customers_raw_temp
 
 # COMMAND ----------
 
@@ -94,8 +100,20 @@ assert spark.table("customers_raw_temp").dtypes ==  [('customer_id', 'string'),
 # MAGIC -- TODO
 # MAGIC 
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW customer_count_by_state_temp AS
-# MAGIC SELECT
-# MAGIC   <FILL-IN>
+# MAGIC SELECT state, count(customer_id) as customer_count
+# MAGIC from customers_raw_temp
+# MAGIC group by state
+# MAGIC   
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from customer_count_by_state_temp
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC describe customer_count_by_state_temp
 
 # COMMAND ----------
 
@@ -117,8 +135,17 @@ assert spark.table("customer_count_by_state_temp").dtypes == [('state', 'string'
 # TODO
 customers_count_checkpoint_path = f"{DA.paths.checkpoints}/customers_count"
 
-query = (spark
-  <FILL-IN>
+query = (spark.table("customer_count_by_state_temp")
+         .writeStream
+         .option("checkpointLocation", f"{DA.paths.checkpoints}")
+         .outputMode("complete")
+         .trigger(availableNow=True)
+         .table("customer_count_by_state"))
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from customer_count_by_state
 
 # COMMAND ----------
 
@@ -142,7 +169,7 @@ assert spark.table("customer_count_by_state").dtypes == [('state', 'string'), ('
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC -- TODO
+# MAGIC select * from customer_count_by_state
 
 # COMMAND ----------
 
