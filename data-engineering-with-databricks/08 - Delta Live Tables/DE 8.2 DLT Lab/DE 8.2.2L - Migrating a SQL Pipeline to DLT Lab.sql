@@ -34,9 +34,9 @@
 -- COMMAND ----------
 
 -- TODO
-CREATE <FILL-IN>
-AS SELECT <FILL-IN>
-  FROM cloud_files("${source}", "json", map("cloudFiles.schemaHints", "time DOUBLE"))
+CREATE OR REFRESH STREAMING LIVE TABLE recordings_bronze
+AS SELECT *, current_timestamp() as receipt_time, input_file_name() as source_file
+  FROM cloud_files("${source}", "json", map("cloudFiles.schemaHints", "time DOUBLE"));
 
 -- COMMAND ----------
 
@@ -59,9 +59,9 @@ AS SELECT <FILL-IN>
 -- COMMAND ----------
 
 -- TODO
-CREATE <FILL-IN> pii
+CREATE OR REFRESH STREAMING LIVE TABLE pii
 AS SELECT *
-  FROM cloud_files("/mnt/training/healthcare/patient", "csv", map(<FILL-IN>))
+  FROM cloud_files("/mnt/training/healthcare/patient", "csv", map("header", "true", "cloudFiles.inferColumnTypes", "true"))
 
 -- COMMAND ----------
 
@@ -86,16 +86,18 @@ AS SELECT *
 
 -- COMMAND ----------
 
--- TODO
+
 CREATE OR REFRESH STREAMING LIVE TABLE recordings_enriched
-  (<FILL-IN add a constraint to drop records when heartrate ! > 0>)
+    (CONSTRAINT valid_heartrate EXPECT (heartrate > 0) ON VIOLATION DROP ROW)
 AS SELECT 
-  CAST(<FILL-IN>) device_id, 
-  <FILL-IN mrn>, 
-  <FILL-IN heartrate>, 
-  CAST(FROM_UNIXTIME(DOUBLE(time), 'yyyy-MM-dd HH:mm:ss') AS TIMESTAMP) time 
-  FROM STREAM(live.recordings_bronze)
-  <FILL-IN specify source and perform inner join with pii on mrn>
+  CAST(a.device_id AS INTEGER) device_id,
+  CAST(a.mrn AS LONG) mrn,
+  CAST(a.heartrate AS DOUBLE) heartrate,
+  CAST(FROM_UNIXTIME(DOUBLE(time), 'yyyy-MM-dd HH:mm:ss') AS TIMESTAMP) time,
+  b.name
+  FROM STREAM(live.recordings_bronze) a  
+    INNER JOIN STREAM(live.pii) b
+    ON a.mrn = b.mrn
 
 -- COMMAND ----------
 
@@ -116,9 +118,11 @@ AS SELECT
 -- COMMAND ----------
 
 -- TODO
-CREATE <FILL-IN> daily_patient_avg
-  COMMENT <FILL-IN insert comment here>
-AS SELECT <FILL-IN>
+CREATE OR REFRESH STREAMING LIVE TABLE daily_patient_avg
+  COMMENT "gold table from daily_patient_avg"
+AS SELECT mrn, name, MEAN(heartrate) as avg_heartrate, DATE(time) as `date`
+from STREAM(live.recordings_enriched)
+group by mrn, name, DATE(time)
 
 -- COMMAND ----------
 
